@@ -10,7 +10,14 @@
     <form action="{{ url_for('edit_task', id=task[0]) }}" method="POST">
         <input type="text" name="title" value="{{ task[1] }}" required>
         <input type="text" name="description" value="{{ task[2] }}">
+        <input type="date" name="due_date" value="{{ task[4] if task[4] else '' }}" placeholder="Fecha Límite (Opcional)">
+        <select name="priority">
+            <option value="Baja" {% if task[5] == 'Baja' %}selected{% endif %}>Baja</option>
+            <option value="Media" {% if task[5] == 'Media' %}selected{% endif %}>Media</option>
+            <option value="Alta" {% if task[5] == 'Alta' %}selected{% endif %}>Alta</option>
+        </select>
         <button type="submit">Actualizar Tarea</button>
     </form>
+    
 </body>
 </html>
