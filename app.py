@@ -71,7 +71,6 @@ def add_task():
     due_date = request.form['due_date']
     priority = request.form['priority']
     
-    # Verificar si se ingresó una fecha límite
     due_date = due_date if due_date else None
 
     cur = mydb.cursor()
@@ -111,7 +110,6 @@ def edit_task(id):
         due_date = request.form['due_date']
         priority = request.form['priority']
         
-        # Verificar si se ingresó una fecha límite
         due_date = due_date if due_date else None
 
         cur = mydb.cursor()
