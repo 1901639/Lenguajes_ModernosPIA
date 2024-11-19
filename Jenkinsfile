@@ -2,56 +2,41 @@ pipeline {
     agent any
 
     environment {
-        // Define environment variables
-        DB_PASSWORD = '1a.2b.3c,'
+        DOCKER_COMPOSE_VERSION = '1.29.2' // Specify your Docker Compose version
     }
 
     stages {
-        stage('Checkout Code') {
+        stage('Clone Repository') {
             steps {
-                // Checkout your repository
-                git branch: 'main', url: 'https://github.com/1901639/Lenguajes_ModernosPIA.git'
+                // Clone the repository containing the Dockerized Flask app
+                git 'https://github.com/1901639/Lenguajes_ModernosPIA.git'
             }
         }
 
-        stage('Build and Run Services') {
+        stage('Setup Docker') {
             steps {
-                // Ensure Docker Compose is up-to-date
-                sh 'docker-compose --version'
+                // Install Docker Compose if not already installed
+                sh '''
+                if ! [ -x "$(command -v docker-compose)" ]; then
+                  echo "Installing Docker Compose..."
+                  sudo curl -L "https://github.com/docker/compose/releases/download/$DOCKER_COMPOSE_VERSION/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+                  sudo chmod +x /usr/local/bin/docker-compose
+                fi
+                '''
+            }
+        }
 
-                // Build and start the containers
+        stage('Build and Deploy') {
+            steps {
+                // Build and run the containers
+                sh 'docker-compose down' // Stop existing containers (if any)
                 sh 'docker-compose up --build -d'
             }
         }
 
-        stage('Wait for Services to Initialize') {
+        stage('Verify Deployment') {
             steps {
-                // Wait for MySQL to be ready
-                script {
-                    def retries = 10
-                    def success = false
-
-                    for (int i = 0; i < retries; i++) {
-                        try {
-                            sh 'docker exec $(docker ps -q -f name=mysql-db) mysqladmin ping -u root --password=${DB_PASSWORD}'
-                            success = true
-                            break
-                        } catch (Exception e) {
-                            echo "Database not ready yet. Retrying in 5 seconds..."
-                            sleep(5)
-                        }
-                    }
-
-                    if (!success) {
-                        error "Database failed to initialize within timeout"
-                    }
-                }
-            }
-        }
-
-        stage('Test Application') {
-            steps {
-                // Optionally, run a health check or test the Flask app
+                // Check that the Flask app is running
                 sh 'curl -f http://localhost:5000 || exit 1'
             }
         }
@@ -59,7 +44,7 @@ pipeline {
 
     post {
         always {
-            // Stop and remove containers after execution
+            // Clean up containers after pipeline completion
             sh 'docker-compose down'
         }
     }
