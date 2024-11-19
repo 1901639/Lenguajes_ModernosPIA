@@ -3,6 +3,7 @@ import os
 import mysql.connector
 
 app = Flask(__name__)
+app.debug = True
 
 # Configuración de la base de datos MySQL
 mydb = mysql.connector.connect(
@@ -20,7 +21,11 @@ table_created = False
 
 @app.route('/')
 def index():
-    sort_by = request.args.get('sort', 'due_date')  # Por defecto, ordenar por fecha límite
+    search_query = request.args.get('search', '')
+    if search_query:
+        search_query = '%'+search_query+'%'
+    sort_by = request.args.get('sort', 'due_date')
+    params = (str(search_query),)
 
     # Construir la consulta SQL según la opción de ordenamiento seleccionada
     if sort_by == 'due_date':
@@ -55,14 +60,19 @@ def index():
                 CASE WHEN due_date IS NULL THEN 1 ELSE 0 END, 
                 due_date ASC
         """
-
     cur = mydb.cursor()
-    cur.execute(query)
-    tasks = cur.fetchall()
-    cur.close()
-
-    return render_template('index.html', tasks=tasks, sort_by=sort_by)
-
+    if search_query:
+        query = "SELECT * FROM tasks WHERE title LIKE %s"
+        cur.execute(query, params)
+        tasks = cur.fetchall()
+        cur.close()
+        app.logger.info(query)
+        return render_template('index.html', tasks=tasks, search_query=search_query)
+    else:
+        cur.execute(query)
+        tasks = cur.fetchall()
+        cur.close()
+        return render_template('index.html', tasks=tasks, sort_by=sort_by)
 
 @app.route('/add', methods=['POST'])
 def add_task():
