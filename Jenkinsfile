@@ -2,20 +2,18 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_COMPOSE_VERSION = '1.29.2' // Specify your Docker Compose version
+        DOCKER_COMPOSE_VERSION = '1.29.2'
     }
 
     stages {
         stage('Clone Repository') {
             steps {
-                // Clone the repository containing the Dockerized Flask app
                 git branch: 'main', url: 'https://github.com/1901639/Lenguajes_ModernosPIA.git'
             }
         }
 
         stage('Setup Docker') {
             steps {
-                // Install Docker Compose if not already installed
                 sh '''
                 if ! [ -x "$(command -v docker-compose)" ]; then
                   echo "Installing Docker Compose..."
@@ -28,24 +26,28 @@ pipeline {
 
         stage('Build and Deploy') {
             steps {
-                // Build and run the containers
-                sh 'docker-compose down' // Stop existing containers (if any)
+                sh 'docker-compose down'
                 sh 'docker-compose up --build -d'
             }
         }
 
         stage('Verify Deployment') {
             steps {
-                // Check that the Flask app is running
                 sh 'curl -f http://localhost:5000 || exit 1'
             }
         }
     }
 
     post {
-        always {
-            // Clean up containers after pipeline completion
-            sh 'docker-compose down'
+        success {
+            script {
+                echo 'App is running. Stop the containers manually when done.'
+                echo 'Run the following command to stop the app:'
+                echo '${DOCKER_COMPOSE_CMD} down'
+            }
+        }
+        failure {
+            sh '${DOCKER_COMPOSE_CMD} down || true'
         }
     }
 }
