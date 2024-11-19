@@ -9,7 +9,7 @@ pipeline {
         stage('Clone Repository') {
             steps {
                 // Clone the repository containing the Dockerized Flask app
-                git 'https://github.com/1901639/Lenguajes_ModernosPIA.git'
+                git branch: 'main', url: 'https://github.com/1901639/Lenguajes_ModernosPIA.git'
             }
         }
 
